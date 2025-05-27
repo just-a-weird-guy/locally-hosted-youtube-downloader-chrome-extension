@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head>
+   <meta charset="utf-8"/>
+   <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+   <title>YouTube Video Downloader</title>
+   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+   <style>
+       html {
+           background-color: #1a1d23;
+           border-radius: 16px;
+           overflow: hidden;
+       }
+       body {
+           width: 380px;
+           margin: 0;
+           padding: 0;
+           font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+           font-size: 14px;
+           max-height: 600px;
+           overflow-y: auto;
+           background-color: #1a1d23;
+           color: #e4e6ea;
+           border-radius: 16px;
+       }
+       .popup-outer-wrapper {
+           background: linear-gradient(135deg, #1a1d23 0%, #16191e 100%);
+           border-radius: 16px;
+           box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 8px 16px rgba(0,0,0,0.2);
+           overflow: hidden;
+           padding: 16px;
+           border: 1px solid #2d3748;
+       }
+       .container {
+           display: flex;
+           flex-direction: column;
+           gap: 16px;
+       }
+       .section {
+            background: linear-gradient(135deg, #242933 0%, #1f242b 100%);
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 1px solid #2d3748;
+            position: relative;
+            overflow: hidden;
+       }
+       .section::before {
+           content: '';
+           position: absolute;
+           top: 0;
+           left: 0;
+           right: 0;
+           height: 1px;
+           background: linear-gradient(90deg, transparent 0%, #4299e1 50%, transparent 100%);
+           opacity: 0.6;
+       }
+
+       /* Tab Interface Styles */
+       .tab-container {
+           background: linear-gradient(135deg, #242933 0%, #1f242b 100%);
+           border-radius: 12px;
+           box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+           border: 1px solid #2d3748;
+           overflow: hidden;
+           position: relative;
+       }
+       .tab-container::before {
+           content: '';
+           position: absolute;
+           top: 0;
+           left: 0;
+           right: 0;
+           height: 1px;
+           background: linear-gradient(90deg, transparent 0%, #4299e1 50%, transparent 100%);
+           opacity: 0.6;
+       }
+       .tab-header {
+           display: flex;
+           background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+           border-bottom: 1px solid #2d3748;
+       }
+       .tab-button {
+           flex: 1;
+           padding: 14px 20px;
+           background: transparent;
+           border: none;
+           color: #a0aec0;
+           font-size: 14px;
+           font-weight: 600;
+           cursor: pointer;
+           transition: all 0.3s ease;
+           text-transform: uppercase;
+           letter-spacing: 0.5px;
+           position: relative;
+           overflow: hidden;
+       }
+       .tab-button::before {
+           content: '';
+           position: absolute;
+           bottom: 0;
+           left: 0;
+           width: 100%;
+           height: 3px;
+           background: linear-gradient(90deg, #4299e1, #63b3ed);
+           transform: scaleX(0);
+           transition: transform 0.3s ease;
+           transform-origin: left;
+       }
+       .tab-button:hover {
+           color: #e4e6ea;
+           background: rgba(66, 153, 225, 0.1);
+       }
+       .tab-button.active {
+           color: #4299e1;
+           background: linear-gradient(135deg, rgba(66, 153, 225, 0.15) 0%, rgba(66, 153, 225, 0.05) 100%);
+       }
+       .tab-button.active::before {
+           transform: scaleX(1);
+       }
+       .tab-content {
+           padding: 16px;
+           display: none;
+       }
+       .tab-content.active {
+           display: block;
+       }
+
+       /* Special styling for downloads status section */
+       #downloads-status {
+           padding: 16px 16px 12px 16px;
+       }
+       
+       .section-title {
+           font-size: 16px;
+           font-weight: 600;
+           color: #f7fafc;
+           margin: 0 0 12px 0;
+           padding-bottom: 8px;
+           border-bottom: 1px solid #2d3748;
+           display: flex;
+           align-items: center;
+           gap: 8px;
+       }
+       .section-title::before {
+           content: '';
+           width: 4px;
+           height: 16px;
+           background: linear-gradient(135deg, #4299e1, #63b3ed);
+           border-radius: 2px;
+       }
+       .content-info { 
+           display: flex; 
+           flex-direction: column; 
+           gap: 12px; 
+       }
+       .content-title {
+           font-size: 14px;
+           font-weight: 500;
+           color: #f7fafc;
+           margin: 0;
+           line-height: 1.4;
+           background: rgba(66, 153, 225, 0.1);
+           padding: 8px 12px;
+           border-radius: 8px;
+           border-left: 3px solid #4299e1;
+       }
+       .thumbnail {
+           width: 100%;
+           border-radius: 10px;
+           box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+           transition: transform 0.2s ease;
+        }
+        select {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #4a5568;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+            color: #e4e6ea;
+            font-size: 13px; /* Reduced from 14px to accommodate file sizes */
+            font-weight: 500;
+            transition: all 0.2s ease;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 16px;
+            padding-right: 40px;
+            max-width: 200px; /* Add max-width to prevent overflow */
+        }
+
+select option {
+    background-color: #2d3748;
+    color: #e4e6ea;
+    padding: 8px 12px;
+    border: none;
+    font-size: 12px; /* Smaller font for options with file sizes */
+}
+        .thumbnail:hover {
+            transform: scale(1.02);
+        }
+       .download-options { 
+           display: flex; 
+           gap: 12px; 
+           align-items: center; 
+           margin-top: 12px;
+       }
+       select {
+           flex: 1;
+           padding: 12px 16px;
+           border: 1px solid #4a5568;
+           border-radius: 8px;
+           background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+           color: #e4e6ea;
+           font-size: 14px;
+           font-weight: 500;
+           transition: all 0.2s ease;
+           appearance: none;
+           background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+           background-position: right 12px center;
+           background-repeat: no-repeat;
+           background-size: 16px;
+           padding-right: 40px;
+       }
+       select:hover {
+           border-color: #4299e1;
+           background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+       }
+       select:focus {
+           outline: none;
+           border-color: #4299e1;
+           box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+       }
+       
+       /* Fix for dropdown options */
+       select option {
+           background-color: #2d3748;
+           color: #e4e6ea;
+           padding: 8px 12px;
+           border: none;
+       }
+       select option:hover {
+           background-color: #4299e1;
+           color: #ffffff;
+       }
+       select option:checked {
+           background-color: #4299e1;
+           color: #ffffff;
+       }
+       
+       button {
+           background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+           color: white;
+           border: none;
+           padding: 12px 18px; /* Reduced horizontal padding */
+           border-radius: 8px;
+           cursor: pointer;
+           transition: all 0.2s ease;
+           font-size: 12px; /* Reduced from 14px */
+           font-weight: 600;
+           text-transform: uppercase;
+           letter-spacing: 0.3px; /* Reduced from 0.5px */
+           box-shadow: 0 4px 12px rgba(66, 153, 225, 0.2);
+           position: relative;
+           overflow: hidden;
+           min-width: 100px; /* Added minimum width */
+           flex-shrink: 0; /* Prevent button from shrinking */
+       }
+       button::before {
+           content: '';
+           position: absolute;
+           top: 0;
+           left: -100%;
+           width: 100%;
+           height: 100%;
+           background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+           transition: left 0.5s;
+       }
+       button:hover::before {
+           left: 100%;
+       }
+       button:hover {
+           background: linear-gradient(135deg, #3182ce 0%, #2c5282 100%);
+           transform: translateY(-1px);
+           box-shadow: 0 6px 20px rgba(66, 153, 225, 0.3);
+        }
+       button:disabled {
+           background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+           color: #a0aec0;
+           cursor: not-allowed;
+           box-shadow: none;
+           transform: none;
+        }
+
+       .message-area {
+           margin-top: 0;
+           padding: 12px 16px;
+           text-align: center;
+           font-size: 13px;
+           display: none;
+           line-height: 1.4;
+           border-radius: 8px;
+           font-weight: 500;
+       }
+       .message-area.visible { display: block; }
+       .error { 
+           color: #fed7d7; 
+           background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+           border: 1px solid #fc8181;
+           box-shadow: 0 4px 12px rgba(229, 62, 62, 0.2);
+       }
+       .success { 
+           color: #c6f6d5; 
+           background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+           border: 1px solid #68d391;
+           box-shadow: 0 4px 12px rgba(56, 161, 105, 0.2);
+       }
+
+       #no-video-message-section {
+            padding: 0;
+            background: transparent;
+            box-shadow: none;
+            border: none;
+       }
+       #no-video-message {
+           color: #a0aec0;
+           text-align: center;
+           padding: 24px 16px;
+           background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+           border: 2px dashed #4a5568;
+           border-radius: 12px;
+           display: none;
+           font-size: 14px;
+           font-weight: 500;
+       }
+       #downloads-status .section-title {
+            margin-bottom: 8px;
+       }
+       #downloads-list {
+           list-style: none;
+           padding: 0;
+           margin: 0;
+           max-height: 280px;
+           min-height: 120px;
+           overflow-y: auto;
+           background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+           border: 1px solid #4a5568;
+           border-radius: 10px;
+       }
+       #downloads-list li {
+           padding: 14px 16px;
+           border-bottom: 1px solid #2d3748;
+           font-size: 13px;
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+           flex-wrap: wrap;
+           gap: 8px;
+           background: linear-gradient(135deg, #242933 0%, #1f242b 100%);
+           transition: background 0.2s ease;
+       }
+       #downloads-list li:hover {
+           background: linear-gradient(135deg, #2d3748 0%, #374151 100%);
+       }
+       #downloads-list li:first-child {
+           border-top-left-radius: 9px;
+           border-top-right-radius: 9px;
+       }
+       #downloads-list li:last-child {
+           border-bottom: none;
+           border-bottom-left-radius: 9px;
+           border-bottom-right-radius: 9px;
+       }
+       #downloads-list li.no-downloads {
+           color: #a0aec0;
+           text-align: center;
+           font-style: italic;
+           padding: 40px 16px;
+           justify-content: center;
+           background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+           border-radius: 9px;
+       }
+       .status-text {
+           flex-grow: 1;
+           line-height: 1.4;
+           min-width: 170px;
+       }
+       .status-text b {
+           display: block;
+           font-weight: 600;
+           color: #f7fafc;
+           margin-bottom: 4px;
+           font-size: 13px;
+       }
+       .status-text i {
+           color: #4299e1;
+           font-weight: 500;
+           font-style: normal;
+           text-transform: uppercase;
+           font-size: 11px;
+           letter-spacing: 0.5px;
+       }
+       .status-text .message-detail {
+           font-size: 0.88em;
+           color: #a0aec0;
+           display: block;
+           margin-top: 4px;
+       }
+       .status-text .size-info {
+           font-size: 0.88em;
+           color: #68d391;
+           font-weight: 500;
+       }
+
+       .action-buttons { 
+           display: flex; 
+           gap: 8px; 
+           align-items: center; 
+       }
+       .action-buttons button, .action-buttons a {
+            text-decoration: none;
+            color: #4299e1;
+            font-weight: 500;
+            background: linear-gradient(135deg, rgba(66, 153, 225, 0.1) 0%, rgba(66, 153, 225, 0.05) 100%);
+            border: 1px solid rgba(66, 153, 225, 0.3);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+       }
+        .action-buttons button:hover, .action-buttons a:hover {
+            background: linear-gradient(135deg, rgba(66, 153, 225, 0.2) 0%, rgba(66, 153, 225, 0.1) 100%);
+            border-color: rgba(66, 153, 225, 0.5);
+            text-decoration: none;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(66, 153, 225, 0.1);
+        }
+       #loading-indicator {
+           text-align: center;
+           padding: 8px 0;
+           color: #4299e1;
+           font-style: normal;
+           font-size: 13px;
+           font-weight: 500;
+           min-height: 1.2em;
+           visibility: hidden;
+           opacity: 0;
+           transition: opacity 0.3s ease-in-out;
+           background: linear-gradient(90deg, #4299e1, #63b3ed, #4299e1);
+           background-size: 200% 100%;
+           animation: shimmer 2s ease-in-out infinite;
+           -webkit-background-clip: text;
+           -webkit-text-fill-color: transparent;
+           background-clip: text;
+       }
+       @keyframes shimmer {
+           0% {
+               background-position: -200% 0;
+           }
+           100% {
+               background-position: 200% 0;
+           }
+       }
+       #loading-indicator.visible {
+           visibility: visible;
+           opacity: 1;
+       }
+       body::-webkit-scrollbar, #downloads-list::-webkit-scrollbar {
+            width: 8px;
+       }
+       body::-webkit-scrollbar-track, #downloads-list::-webkit-scrollbar-track {
+            background: #1a202c;
+            border-radius: 4px;
+       }
+       body::-webkit-scrollbar-thumb, #downloads-list::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            border-radius: 4px;
+       }
+       body::-webkit-scrollbar-thumb:hover, #downloads-list::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
+       }
+
+       /* Status indicators */
+       .status-text i[data-status="pending"]::before {
+           content: "⏳ ";
+       }
+       .status-text i[data-status="processing"]::before {
+           content: "⚙️ ";
+       }
+       .status-text i[data-status="uploading"]::before {
+           content: "⬆️ ";
+       }
+       .status-text i[data-status="complete"]::before {
+           content: "✅ ";
+       }
+       .status-text i[data-status="failed"]::before {
+           content: "❌ ";
+       }
+       .status-text i[data-status="error"]::before {
+           content: "⚠️ ";
+       }
+
+       /* Pulse animation for active downloads */
+       @keyframes pulse {
+           0%, 100% { opacity: 1; }
+           50% { opacity: 0.7; }
+       }
+       .status-text i[data-status="pending"],
+       .status-text i[data-status="processing"],
+       .status-text i[data-status="uploading"] {
+           animation: pulse 2s ease-in-out infinite;
+       }
+
+   </style>
+ </head>
+ <body>
+  <div class="popup-outer-wrapper">
+   <div class="container">
+     <div class="message-area section" id="error-message" style="display: none;"></div>
+
+     <div id="content-section" class="tab-container">
+       <div class="tab-header">
+         <button class="tab-button active" data-tab="video">🎥 Video</button>
+         <button class="tab-button" data-tab="audio">🎵 Audio</button>
+       </div>
+
+       <div id="video-tab" class="tab-content active">
+         <div id="video-content" style="display: none;">
+           <div class="content-info">
+             <img alt="Video thumbnail" class="thumbnail" id="video-thumbnail" src="icon48.png"/>
+             <h3 class="content-title" id="video-title">Loading title...</h3>
+           </div>
+           <div class="download-options">
+            <select id="video-resolution">
+              <option value="360">360p</option>
+              <option value="480">480p</option>
+              <option value="720" selected>720p (HD)</option>
+              <option value="1080">1080p (Full HD)</option>
+            </select>
+             <button id="video-download-btn">Download</button>
+           </div>
+         </div>
+       </div>
+
+       <div id="audio-tab" class="tab-content">
+         <div id="audio-content" style="display: none;">
+           <div class="content-info">
+             <img alt="Video thumbnail" class="thumbnail" id="audio-thumbnail" src="icon48.png"/>
+             <h3 class="content-title" id="audio-title">Loading title...</h3>
+           </div>
+           <div class="download-options">
+            <select id="audio-quality">
+              <option value="128" selected>128 kbps (Standard)</option>
+              <option value="192">192 kbps (High)</option>
+              <option value="256">256 kbps (Very High)</option>
+              <option value="320">320 kbps (Premium)</option>
+            </select>
+             <button id="audio-download-btn">Download</button>
+           </div>
+         </div>
+       </div>
+     </div>
+
+     <div id="no-video-message-section" class="section">
+        <div id="no-video-message">
+          🎬 Please navigate to a YouTube video page<br>
+          <small>(youtube.com/watch?v=...)</small>
+        </div>
+     </div>
+
+     <div id="downloads-status" class="section">
+       <h2 class="section-title">📥 Download Status</h2>
+       <div id="loading-indicator">Loading status...</div>
+       <ul id="downloads-list"></ul>
+     </div>
+   </div>
+  </div>
+   <script src="popup.js"></script>
+ </body>
+</html>

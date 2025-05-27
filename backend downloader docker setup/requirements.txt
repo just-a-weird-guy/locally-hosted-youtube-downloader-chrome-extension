@@ -1,0 +1,7 @@
+flask
+flask-cors
+yt-dlp
+requests
+uuid
+werkzeug
+gunicorn
